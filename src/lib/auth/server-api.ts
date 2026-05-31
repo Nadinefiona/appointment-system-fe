@@ -1,6 +1,12 @@
 import { API_BASE } from "@/lib/constants";
 import { parseApiError } from "@/lib/api/errors";
-import type { RefreshResponse, TokenResponse } from "@/types/api";
+import type {
+  AuthUser,
+  MeProfile,
+  RefreshResponse,
+  TokenResponse,
+  UserRole,
+} from "@/types/api";
 
 export async function djangoFetch(
   path: string,
@@ -22,6 +28,28 @@ export async function djangoFetch(
   });
 }
 
+function normalizeRole(role: unknown): UserRole {
+  const value = String(role ?? "client").toLowerCase();
+  if (value === "provider" || value === "admin") return value;
+  return "client";
+}
+
+export function toAuthUser(
+  user: Pick<MeProfile, "id" | "email" | "role">,
+): AuthUser {
+  return {
+    id: String(user.id),
+    email: user.email,
+    role: normalizeRole(user.role),
+  };
+}
+
+export async function fetchMe(accessToken: string): Promise<MeProfile> {
+  const res = await djangoFetch("/api/me/", { accessToken });
+  if (!res.ok) throw await parseApiError(res);
+  return res.json() as Promise<MeProfile>;
+}
+
 export async function obtainToken(
   email: string,
   password: string,
@@ -31,7 +59,20 @@ export async function obtainToken(
     body: JSON.stringify({ email, password }),
   });
   if (!res.ok) throw await parseApiError(res);
-  return res.json() as Promise<TokenResponse>;
+
+  const tokens = (await res.json()) as TokenResponse;
+  if (tokens.user?.id && tokens.user?.email && tokens.user?.role) {
+    return {
+      ...tokens,
+      user: toAuthUser(tokens.user as MeProfile),
+    };
+  }
+
+  const me = await fetchMe(tokens.access);
+  return {
+    ...tokens,
+    user: toAuthUser(me),
+  };
 }
 
 export async function refreshToken(

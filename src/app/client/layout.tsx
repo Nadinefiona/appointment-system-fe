@@ -3,7 +3,7 @@
 import { AppShell } from "@/components/layout/AppShell";
 
 const nav = [
-  { href: "/client/providers", label: "Providers" },
+  { href: "/client/providers", label: "Book" },
   { href: "/client/bookings", label: "My bookings" },
 ];
 
@@ -13,7 +13,7 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AppShell title="Client" nav={nav}>
+    <AppShell title="Dashboard" nav={nav}>
       {children}
     </AppShell>
   );

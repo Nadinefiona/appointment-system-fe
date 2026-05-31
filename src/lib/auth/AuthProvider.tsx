@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   getSessionRequest,
   loginRequest,
@@ -28,7 +28,6 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -41,20 +40,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshSession().finally(() => setLoading(false));
   }, [refreshSession]);
 
-  const login = useCallback(
-    async (email: string, password: string) => {
-      const data = await loginRequest(email, password);
-      setUser(data.user);
-      router.push(ROLE_HOME[data.user.role] ?? "/");
-    },
-    [router],
-  );
+  const login = useCallback(async (email: string, password: string) => {
+    const data = await loginRequest(email, password);
+    if (!data.user?.role) {
+      throw new Error("Login succeeded but user profile is missing.");
+    }
+
+    setUser(data.user);
+
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+    const home = ROLE_HOME[data.user.role] ?? "/";
+    const destination =
+      next && next.startsWith("/") && !next.startsWith("//") ? next : home;
+
+    toast.success("Signed in successfully");
+    // Full navigation avoids "Router action dispatched before initialization" during dev HMR
+    window.location.assign(destination);
+  }, []);
 
   const logout = useCallback(async () => {
     await logoutRequest();
     setUser(null);
-    router.push("/login");
-  }, [router]);
+    window.location.assign("/login");
+  }, []);
 
   const value = useMemo(
     () => ({ user, loading, login, logout, refreshSession }),

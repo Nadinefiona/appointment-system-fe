@@ -2,18 +2,18 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api/client";
-import type { ScheduleResponse } from "@/types/api";
-import { useProviderProfile } from "@/hooks/useProviderProfile";
 import { format, addDays } from "date-fns";
+import { api } from "@/lib/api/client";
+import { useProviderProfile } from "@/hooks/useProviderProfile";
+import type { ScheduleResponse } from "@/types/api";
+import { WEEKDAYS } from "@/lib/constants";
+import { formatDateTime } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Spinner } from "@/components/ui/Spinner";
 import { Input } from "@/components/ui/Input";
-import { formatDateTime } from "@/lib/utils";
-import { WEEKDAYS } from "@/lib/constants";
 
-export default function ProviderSchedulePage() {
-  const { data: profile, isLoading: profileLoading } = useProviderProfile();
+export function ProviderSchedulePanel() {
+  const { data: profile } = useProviderProfile();
   const [from, setFrom] = useState(format(new Date(), "yyyy-MM-dd"));
   const [to, setTo] = useState(format(addDays(new Date(), 7), "yyyy-MM-dd"));
 
@@ -30,21 +30,26 @@ export default function ProviderSchedulePage() {
     enabled: Boolean(profile?.id),
   });
 
-  if (profileLoading) return <Spinner />;
-
   return (
-    <>
-      <h2 className="mb-6 font-display text-2xl text-stone-900">Schedule</h2>
-      <Card className="mb-6 grid gap-4 sm:grid-cols-2">
+    <section className="mt-12 border-t border-stone-200 pt-10">
+      <h3 className="font-display text-xl text-stone-900">Calendar overview</h3>
+      <p className="mt-1 text-sm text-stone-600">
+        See your weekly hours and booked appointments for a date range.
+      </p>
+
+      <Card className="mt-6 grid gap-4 sm:grid-cols-2">
         <Input label="From" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         <Input label="To" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
       </Card>
+
       {isLoading ? (
-        <Spinner />
+        <div className="mt-6">
+          <Spinner />
+        </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <Card>
-            <h3 className="mb-3 font-medium">Availability rules</h3>
+            <h4 className="mb-3 font-medium text-stone-900">Weekly hours</h4>
             <ul className="space-y-2 text-sm">
               {(data?.availability ?? []).map((a) => (
                 <li key={a.id} className="text-stone-600">
@@ -52,12 +57,12 @@ export default function ProviderSchedulePage() {
                 </li>
               ))}
               {(data?.availability ?? []).length === 0 && (
-                <li className="text-stone-500">No rules in range</li>
+                <li className="text-stone-500">Nothing in this range</li>
               )}
             </ul>
           </Card>
           <Card>
-            <h3 className="mb-3 font-medium">Bookings</h3>
+            <h4 className="mb-3 font-medium text-stone-900">Appointments</h4>
             <ul className="space-y-2 text-sm">
               {(data?.bookings ?? []).map((b) => (
                 <li key={b.id} className="flex justify-between gap-2">
@@ -66,12 +71,12 @@ export default function ProviderSchedulePage() {
                 </li>
               ))}
               {(data?.bookings ?? []).length === 0 && (
-                <li className="text-stone-500">No bookings in range</li>
+                <li className="text-stone-500">No appointments in this range</li>
               )}
             </ul>
           </Card>
         </div>
       )}
-    </>
+    </section>
   );
 }

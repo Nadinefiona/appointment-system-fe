@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
-import { useAuth } from "@/lib/auth/AuthProvider";
-import { Button } from "@/components/ui/Button";
+import { UserMenu } from "@/components/layout/UserMenu";
 
 export function AppShell({
   title,
@@ -16,8 +15,6 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
-
   return (
     <div className="min-h-screen bg-canvas">
       <header className="border-b border-stone-200 bg-white/90 backdrop-blur">
@@ -28,14 +25,7 @@ export function AppShell({
             </p>
             <h1 className="font-display text-xl text-stone-900">{title}</h1>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-stone-600 sm:inline">
-              {user?.email}
-            </span>
-            <Button variant="ghost" size="sm" onClick={() => logout()}>
-              Sign out
-            </Button>
-          </div>
+          <UserMenu />
         </div>
         <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-3">
           {nav.map((item) => (

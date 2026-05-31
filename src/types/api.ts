@@ -24,28 +24,55 @@ export interface RegisterResponse {
   message: string;
 }
 
-export interface User {
+export interface ProviderProfile {
+  id: string;
+  bio: string;
+  buffer_time: number;
+}
+
+/** GET/PATCH /api/me/ */
+export interface MeProfile {
   id: string;
   username: string;
   email: string;
   first_name: string;
   last_name: string;
   role: UserRole;
+  provider_profile: ProviderProfile | null;
+}
+
+/** @deprecated Use MeProfile */
+export type User = MeProfile;
+
+export interface ProviderUserNested {
+  id: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
 }
 
 export interface ServiceProvider {
   id: string;
-  user: string;
+  user: string | ProviderUserNested;
   bio: string;
   buffer_time: number;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+}
+
+export interface ProviderDetail {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
 }
 
 export interface ServiceType {
   id: string;
-  provider: string;
   name: string;
-  duration: number;
-  price: string;
+  providers: string[];
+  provider_details: ProviderDetail[];
 }
 
 export interface AvailabilitySlot {
@@ -54,21 +81,33 @@ export interface AvailabilitySlot {
   weekday: number;
   start_time: string;
   end_time: string;
-  valid_from: string | null;
-  valid_to: string | null;
 }
 
 export type BookingStatus = "booked" | "cancelled" | "completed";
 
+export interface BookingPerson {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+export interface BookingService {
+  id: string;
+  name: string;
+}
+
+/** GET /api/bookings/ and GET /api/bookings/{id}/ */
 export interface Booking {
   id: string;
-  client: string;
-  provider: string;
-  service: string;
   start_time: string;
   end_time: string;
   status: BookingStatus;
   created_at: string;
+  note?: string;
+  service: BookingService;
+  provider: BookingPerson;
+  client: BookingPerson;
 }
 
 export interface BookingSummary {
@@ -90,8 +129,6 @@ export interface PaginatedResponse<T> {
 export interface OpeningsWindow {
   start_time: string;
   end_time: string;
-  valid_from: string | null;
-  valid_to: string | null;
 }
 
 export interface OpeningsBusy {
@@ -99,12 +136,19 @@ export interface OpeningsBusy {
   end_time: string;
 }
 
+export interface AvailableTimeOption {
+  value: string;
+  label: string;
+}
+
 export interface OpeningsResponse {
   date: string;
-  weekday: number;
-  windows: OpeningsWindow[];
-  busy: OpeningsBusy[];
-  suggested_starts: string[];
+  weekday?: number;
+  available_times: AvailableTimeOption[];
+  /** @deprecated Prefer available_times */
+  windows?: OpeningsWindow[];
+  busy?: OpeningsBusy[];
+  suggested_starts?: string[];
 }
 
 export interface ScheduleResponse {
@@ -118,23 +162,38 @@ export interface CreateBookingPayload {
   provider: string;
   service: string;
   start_time: string;
-  end_time?: string;
+  note?: string;
 }
 
+export interface PatchUserRolePayload {
+  role: UserRole;
+}
+
+/** POST /api/availability-slots/ — weekday 0=Mon … 6=Sun */
 export interface CreateAvailabilityPayload {
   weekday: number;
   start_time: string;
   end_time: string;
-  valid_from?: string | null;
-  valid_to?: string | null;
-  provider?: string;
+}
+
+export interface PatchMePayload {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  provider_profile?: {
+    bio?: string;
+    buffer_time?: number;
+  };
 }
 
 export interface CreateServicePayload {
-  provider: string;
   name: string;
-  duration: number;
-  price: string;
+  providers: string[];
+}
+
+export interface PatchServicePayload {
+  name?: string;
+  providers?: string[];
 }
 
 export interface CreateProviderPayload {

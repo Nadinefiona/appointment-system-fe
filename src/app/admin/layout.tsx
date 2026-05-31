@@ -3,7 +3,7 @@
 import { AppShell } from "@/components/layout/AppShell";
 
 const nav = [
-  { href: "/admin/providers", label: "Providers" },
+  { href: "/admin/providers", label: "Users" },
   { href: "/admin/services", label: "Services" },
   { href: "/admin/bookings", label: "Bookings" },
 ];
@@ -14,7 +14,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AppShell title="Admin" nav={nav}>
+    <AppShell title="Dashboard" nav={nav}>
       {children}
     </AppShell>
   );

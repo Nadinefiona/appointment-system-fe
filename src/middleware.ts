@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
   COOKIE_ACCESS,
+  COOKIE_REFRESH,
   COOKIE_USER,
 } from "@/lib/constants";
 import { parseUserCookie } from "@/lib/auth/user-cookie";
@@ -21,10 +22,39 @@ function homeForRole(role: UserRole): string {
   return "/admin/providers";
 }
 
-export function middleware(request: NextRequest) {
+function applySetCookies(response: NextResponse, setCookies: string[]) {
+  for (const cookie of setCookies) {
+    response.headers.append("Set-Cookie", cookie);
+  }
+}
+
+/** Silently refresh access token when it expired but refresh cookie is still valid. */
+async function tryRefreshAccess(
+  request: NextRequest,
+): Promise<{ access: string | null; setCookies: string[] }> {
+  const refreshRes = await fetch(new URL("/api/auth/refresh", request.url), {
+    method: "POST",
+    headers: {
+      Cookie: request.headers.get("cookie") ?? "",
+    },
+    cache: "no-store",
+  });
+
+  if (!refreshRes.ok) {
+    return { access: null, setCookies: [] };
+  }
+
+  const setCookies = refreshRes.headers.getSetCookie();
+  const accessCookie = setCookies.find((c) => c.startsWith(`${COOKIE_ACCESS}=`));
+  const access = accessCookie?.split(";")[0]?.split("=")?.[1] ?? null;
+  return { access, setCookies };
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const access = request.cookies.get(COOKIE_ACCESS)?.value;
-  const user = parseUserCookie(request.cookies.get(COOKIE_USER)?.value);
+  let access = request.cookies.get(COOKIE_ACCESS)?.value;
+  const refresh = request.cookies.get(COOKIE_REFRESH)?.value;
+  let refreshedCookies: string[] = [];
 
   const isPublic = PUBLIC_PATHS.some(
     (p) => pathname === p || (p !== "/" && pathname.startsWith(`${p}/`)),
@@ -36,6 +66,16 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (!access && refresh && !isPublic) {
+    const refreshed = await tryRefreshAccess(request);
+    if (refreshed.access) {
+      access = refreshed.access;
+      refreshedCookies = refreshed.setCookies;
+    }
+  }
+
+  const user = parseUserCookie(request.cookies.get(COOKIE_USER)?.value);
+
   if (!access && !isPublic) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", pathname);
@@ -43,7 +83,11 @@ export function middleware(request: NextRequest) {
   }
 
   if (access && user && isAuthPage) {
-    return NextResponse.redirect(new URL(homeForRole(user.role), request.url));
+    const response = NextResponse.redirect(
+      new URL(homeForRole(user.role), request.url),
+    );
+    applySetCookies(response, refreshedCookies);
+    return response;
   }
 
   if (access && user) {
@@ -52,12 +96,18 @@ export function middleware(request: NextRequest) {
       string,
     ][]) {
       if (pathname.startsWith(prefix) && user.role !== role) {
-        return NextResponse.redirect(new URL(homeForRole(user.role), request.url));
+        const response = NextResponse.redirect(
+          new URL(homeForRole(user.role), request.url),
+        );
+        applySetCookies(response, refreshedCookies);
+        return response;
       }
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  applySetCookies(response, refreshedCookies);
+  return response;
 }
 
 export const config = {

@@ -32,6 +32,13 @@ export async function POST(request: Request) {
 
     store.set(COOKIE_ACCESS, tokens.access, accessCookieOptions());
     store.set(COOKIE_REFRESH, tokens.refresh, refreshCookieOptions());
+    if (!tokens.user) {
+      return NextResponse.json(
+        { error: "Could not load user profile after login." },
+        { status: 500 },
+      );
+    }
+
     store.set(COOKIE_USER, serializeUser(tokens.user), userCookieOptions());
 
     return NextResponse.json({

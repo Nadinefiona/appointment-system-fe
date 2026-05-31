@@ -10,11 +10,17 @@ export interface RequestOptions {
   auth?: boolean;
 }
 
+function normalizeApiPath(path: string): string {
+  const trimmed = path.replace(/^\//, "").trim();
+  if (!trimmed) return "";
+  return trimmed.endsWith("/") ? trimmed : `${trimmed}/`;
+}
+
 function buildProxyUrl(
   path: string,
   params?: Record<string, string | number | undefined | null>,
 ): string {
-  const cleanPath = path.replace(/^\//, "");
+  const cleanPath = normalizeApiPath(path);
   const url = new URL(`/api/proxy/${cleanPath}`, window.location.origin);
   if (params) {
     for (const [key, value] of Object.entries(params)) {

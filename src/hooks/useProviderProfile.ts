@@ -1,10 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api/client";
-import type { ServiceProvider } from "@/types/api";
+import { useMe } from "@/hooks/useMe";
+import type { ProviderProfile } from "@/types/api";
 
+/** Provider record from nested `provider_profile` on GET /api/me/ */
 export function useProviderProfile() {
-  return useQuery({
-    queryKey: ["provider-profile"],
-    queryFn: () => api.get<ServiceProvider>("me/provider-profile/"),
-  });
+  const query = useMe();
+  return {
+    ...query,
+    data: query.data?.provider_profile ?? null,
+  } as Omit<typeof query, "data"> & { data: ProviderProfile | null };
 }

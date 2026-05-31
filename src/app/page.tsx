@@ -21,18 +21,18 @@ export default function HomePage() {
 
       <section className="mx-auto max-w-3xl px-4 pb-24 pt-16 text-center">
         <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-brand-700">
-          Appointment booking
+          Appointments made simple
         </p>
         <h1 className="font-display text-4xl leading-tight text-stone-900 sm:text-5xl">
-          Schedule care on your terms
+          Book the time that works for you
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-lg text-stone-600">
-          Clients discover providers and book open slots. Providers manage
-          availability and schedules. Admins oversee the full directory.
+          Pick a service, choose an open slot, and you are done. Providers manage
+          their hours in one place.
         </p>
         <div className="mt-10 flex flex-wrap justify-center gap-4">
           <Link href="/register">
-            <Button size="lg">Create client account</Button>
+            <Button size="lg">Create account</Button>
           </Link>
           <Link href="/login">
             <Button size="lg" variant="secondary">
@@ -45,16 +45,16 @@ export default function HomePage() {
       <section className="mx-auto grid max-w-5xl gap-6 px-4 pb-20 sm:grid-cols-3">
         {[
           {
-            title: "Clients",
-            text: "Browse providers, pick a service, and book from real-time openings.",
+            title: "Book",
+            text: "See what is open and reserve a time in a few clicks.",
           },
           {
-            title: "Providers",
-            text: "Set weekly availability, tune your profile, and manage your calendar.",
+            title: "Manage",
+            text: "Set weekly hours, review today’s list, and keep your profile current.",
           },
           {
-            title: "Admins",
-            text: "Maintain providers, services, and organization-wide bookings.",
+            title: "Oversee",
+            text: "Services, users, and appointments in one admin view.",
           },
         ].map((card) => (
           <article

@@ -1,5 +1,11 @@
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+/** Django origin without `/api` suffix (paths in code include `/api/...`). */
+function normalizeApiBase(url: string): string {
+  return url.replace(/\/api\/?$/, "").replace(/\/$/, "");
+}
+
+export const API_BASE = normalizeApiBase(
+  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000",
+);
 
 export const COOKIE_ACCESS = "abs_access";
 export const COOKIE_REFRESH = "abs_refresh";

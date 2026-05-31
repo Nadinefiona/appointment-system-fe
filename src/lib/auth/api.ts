@@ -1,8 +1,8 @@
 import type {
   AuthUser,
+  MeProfile,
   RegisterResponse,
   TokenResponse,
-  User,
 } from "@/types/api";
 
 export async function loginRequest(
@@ -72,8 +72,8 @@ export async function getSessionRequest(): Promise<{
   return res.json() as Promise<{ user: AuthUser | null; authenticated: boolean }>;
 }
 
-export async function fetchMe(): Promise<User> {
+export async function fetchMe(): Promise<MeProfile> {
   const res = await fetch("/api/proxy/me/", { credentials: "include" });
   if (!res.ok) throw new Error("Failed to load profile");
-  return res.json() as Promise<User>;
+  return res.json() as Promise<MeProfile>;
 }

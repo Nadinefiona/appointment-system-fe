@@ -14,7 +14,8 @@ async function forward(
   accessToken: string | null,
 ): Promise<Response> {
   const url = new URL(request.url);
-  const apiPath = `/api/${pathSegments.join("/")}/${url.search}`;
+  const joined = pathSegments.filter(Boolean).join("/");
+  const apiPath = `/api/${joined}/${url.search}`;
 
   const init: RequestInit & { accessToken?: string | null } = {
     method: request.method,
@@ -66,13 +67,22 @@ async function handler(
     }
   }
 
+  if (response.status === 204 || response.status === 205) {
+    return new NextResponse(null, { status: response.status });
+  }
+
   const body = await response.arrayBuffer();
-  return new NextResponse(body, {
+  const headers = new Headers();
+  const contentType = response.headers.get("Content-Type");
+  if (contentType) {
+    headers.set("Content-Type", contentType);
+  } else if (body.byteLength > 0) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  return new NextResponse(body.byteLength > 0 ? body : null, {
     status: response.status,
-    headers: {
-      "Content-Type":
-        response.headers.get("Content-Type") ?? "application/json",
-    },
+    headers,
   });
 }
 
