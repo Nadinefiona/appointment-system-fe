@@ -3,11 +3,14 @@ import type { PaginatedResponse } from "@/types/api";
 
 type HttpMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
+const DEFAULT_TIMEOUT_MS = 30000;
+
 export interface RequestOptions {
   method?: HttpMethod;
   body?: unknown;
   params?: Record<string, string | number | undefined | null>;
   auth?: boolean;
+  timeoutMs?: number;
 }
 
 function normalizeApiPath(path: string): string {
@@ -36,7 +39,7 @@ export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { method = "GET", body, params, auth = true } = options;
+  const { method = "GET", body, params, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
 
   const headers: HeadersInit = {
     Accept: "application/json",
@@ -46,13 +49,27 @@ export async function apiRequest<T>(
     headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(buildProxyUrl(path, params), {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-    credentials: "include",
-    cache: "no-store",
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetch(buildProxyUrl(path, params), {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      credentials: "include",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError(0, "The server took too long to respond. Please try again.");
+    }
+    throw new ApiError(0, "Network error. Check your connection and try again.");
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (response.status === 204) {
     return undefined as T;
@@ -62,7 +79,7 @@ export async function apiRequest<T>(
     throw await parseApiError(response);
   }
 
-  if (response.status === 204 || response.headers.get("content-length") === "0") {
+  if (response.headers.get("content-length") === "0") {
     return undefined as T;
   }
 
