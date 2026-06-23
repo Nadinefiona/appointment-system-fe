@@ -1,4 +1,4 @@
-# Appoint — Frontend
+# Appointment System
 
 A simple appointment booking app. Clients book services, providers manage their hours, and admins oversee everything.
 
@@ -16,7 +16,7 @@ Next.js (App Router) · React · TypeScript · Tailwind CSS · TanStack Query
 ## Getting started
 
 ```bash
-cp .env.local.example .env.local   # set NEXT_PUBLIC_API_URL
+cp .env.local.example .env.local   
 npm install
 npm run dev
 ```

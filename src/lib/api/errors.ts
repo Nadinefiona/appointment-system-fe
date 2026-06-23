@@ -17,40 +17,64 @@ export class ApiError extends Error {
   }
 }
 
+function collectMessages(value: unknown, acc: string[]): void {
+  if (value === null || value === undefined) return;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed) acc.push(trimmed);
+  } else if (Array.isArray(value)) {
+    for (const item of value) collectMessages(item, acc);
+  } else if (typeof value === "object") {
+    for (const item of Object.values(value as Record<string, unknown>)) {
+      collectMessages(item, acc);
+    }
+  } else {
+    acc.push(String(value));
+  }
+}
+
 function normalizeFieldErrors(
   body: Record<string, unknown>,
 ): Record<string, string[]> {
   const errors: Record<string, string[]> = {};
   for (const [key, value] of Object.entries(body)) {
     if (key === "detail") continue;
-    if (Array.isArray(value)) {
-      errors[key] = value.map(String);
-    } else if (typeof value === "string") {
-      errors[key] = [value];
-    }
+    const messages: string[] = [];
+    collectMessages(value, messages);
+    if (messages.length > 0) errors[key] = messages;
   }
   return errors;
 }
 
 export async function parseApiError(response: Response): Promise<ApiError> {
-  let body: Record<string, unknown> = {};
+  let body: unknown = null;
   try {
-    body = (await response.json()) as Record<string, unknown>;
+    body = await response.json();
   } catch {
-    body = {};
+    body = null;
   }
 
+  const record =
+    body && typeof body === "object" && !Array.isArray(body)
+      ? (body as Record<string, unknown>)
+      : {};
+
   const detail =
-    typeof body.detail === "string"
-      ? body.detail
-      : Array.isArray(body.detail)
-        ? body.detail.map(String).join(" ")
+    typeof record.detail === "string"
+      ? record.detail
+      : Array.isArray(record.detail)
+        ? record.detail.map(String).join(" ")
         : null;
 
-  const fieldErrors = normalizeFieldErrors(body);
-  const fieldMessage = Object.values(fieldErrors).flat().join(" ");
+  const fieldErrors = normalizeFieldErrors(record);
+
+  const allMessages: string[] = [];
+  collectMessages(body, allMessages);
+
   const message =
-    detail ?? fieldMessage ?? response.statusText ?? "Request failed";
+    allMessages.join(" ") ||
+    response.statusText ||
+    `Request failed (${response.status})`;
 
   return new ApiError(response.status, message, fieldErrors, detail);
 }

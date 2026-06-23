@@ -107,7 +107,12 @@ export function BookServiceModal({
       qc.invalidateQueries({ queryKey: ["openings"] });
       onClose();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) =>
+      toast.error(
+        e instanceof Error && e.message
+          ? e.message
+          : "Could not book this appointment.",
+      ),
   });
 
   if (!service) return null;
